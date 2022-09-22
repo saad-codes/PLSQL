@@ -1,0 +1,61 @@
+SET SERVEROUTPUT ON ;
+DECLARE
+    TYPE inBlock_vry IS VARRAY(5) OF NUMBER ;
+    vry_obj inBlock_vry := inBlock_vry() ;
+    end_point number := vry_obj.LIMIT ;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE(end_point);
+    FOR i IN 1 .. 5
+    LOOP
+--        vry_obj(i) := 10 ;
+        DBMS_OUTPUT.PUT_LINE(vry_obj(i)) ;
+    END LOOP ;
+END ;
+--------------------------------------------------
+DECLARE 
+   type namesarray IS VARRAY(5) OF VARCHAR2(10); 
+   type grades IS VARRAY(5) OF INTEGER; 
+   names namesarray; 
+   marks grades; 
+   total integer; 
+BEGIN 
+   names := namesarray('Kavita', 'Pritam', 'Ayan', 'Rishav', 'Aziz'); 
+   marks:= grades(98, 97, 78, 87, 92); 
+   total := names.count; 
+   dbms_output.put_line('Total '|| total || ' Students'); 
+   FOR i in 1 .. total LOOP 
+      dbms_output.put_line('Student: ' || names(i) || ' 
+      Marks: ' || marks(i)); 
+   END LOOP; 
+END; 
+-----------------------------------------
+
+declare
+  evens dbms_sql.number_table;
+  inx pls_integer;
+begin
+  for i in 1 .. 10 loop
+    if mod (i, 2) = 0 then
+      evens (i) := i;
+    end if;
+  end loop;
+
+  inx := evens.first;
+  while inx is not null loop
+    dbms_output.put_line ('Val = ' || evens( inx ));
+    inx := evens.next ( inx );
+  end loop;
+end;
+
+-------------------------------------------------
+
+
+declare
+  Type my_nested_table_type IS Table of number;
+  nested_table my_nested_table_type := my_nested_table_type (0,0,0,0,0,0,0,0,0,0) ;
+begin
+  FOR i in 1..10 loop
+    nested_table(i) := 10*i;
+    dbms_output.put_line(nested_table(i));
+  END Loop;
+end;

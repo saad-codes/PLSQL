@@ -1,0 +1,17 @@
+create or replace PROCEDURE parameter_test  
+(id IN NUMBER,    
+name_ OUT VARCHAR2,
+credit_ IN OUT NUMBER)   AS     
+begin    
+dbms_output.put_line('record inserted successfully');
+select NAME into name_ from customers where CUSTOMER_ID = id;
+select 2*CREDIT_LIMIT into credit_ from customers where CUSTOMER_ID = id;
+end;
+--------------------------
+DECLARE 
+   name_ VARCHAR2(200);
+   credit_ number:= 0;
+BEGIN
+   parameter_test(101,name_ ,credit_);  
+   dbms_output.put_line(name_ || credit_);
+END;

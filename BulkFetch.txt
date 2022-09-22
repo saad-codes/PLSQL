@@ -1,0 +1,25 @@
+-----------------------------------------
+DECLARE
+   c_limit PLS_INTEGER :=3 ;
+   CURSOR employees_cur
+   IS
+      SELECT employee_id
+        FROM employees
+       WHERE manager_id = 46;
+
+   TYPE employee_ids_t IS TABLE OF 
+      employees.employee_id%TYPE;
+
+   l_employee_ids   employee_ids_t;
+  
+BEGIN
+   OPEN employees_cur;
+   LOOP
+      FETCH employees_cur
+      BULK COLLECT INTO l_employee_ids
+      LIMIT c_limit;
+      dbms_output.put_line(l_employee_ids.COUNT);
+      EXIT WHEN l_employee_ids.COUNT = 0;
+      dbms_output.put_line('test');
+   END LOOP;
+END;

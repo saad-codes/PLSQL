@@ -1,0 +1,11 @@
+
+DECLARE 
+manager_id number;  -- passing variable 
+sqlquer    VARCHAR2(200); -- query sentence
+tb VARCHAR(20):= 'employees';
+BEGIN 
+sqlquer := q'|select count(1) from system.|'||tb||q'|  where manager_ID = :id and first_name = 'Evie'|';
+EXECUTE IMMEDIATE sqlquer into manager_id using  46 ; -- storing the data 
+dbms_output.put_line(manager_id);
+dbms_output.put_line(sqlquer);
+END;

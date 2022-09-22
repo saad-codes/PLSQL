@@ -1,0 +1,30 @@
+create or replace PROCEDURE 
+IF_ELSE_DATA(credit_limit IN NUMBER, customer_category OUT varchar) 
+AS 
+BEGIN 
+  
+  IF credit_limit > 4500 THEN 
+  customer_category := 'GOLD';
+  ELSIF credit_limit < 4500 and credit_limit > 3500 THEN
+  customer_category := 'SILVER';
+  ELSE 
+    customer_category := 'CHURNING';
+  END IF;
+
+END IF_ELSE_DATA;
+
+--------------------------------
+
+set SERVEROUTPUT ON;
+DECLARE 
+   customer_category varchar(20); 
+   contact number ;
+   CURSOR customers_cursor IS select customer_id,credit_limit from customers ;
+   pre_sal number;
+BEGIN
+  for one_customer in customers_cursor
+  LOOP
+  IF_ELSE_DATA(one_customer.credit_limit , customer_category);
+  dbms_output.put_line('customer with customer id '||one_customer.customer_id || ' is '|| customer_category || ' customer.');
+  END LOOP;
+END;
