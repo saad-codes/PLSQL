@@ -1,3 +1,11 @@
+create or replace PROCEDURE INSERTUSER  
+(id IN NUMBER,    
+name_ OUT VARCHAR2 )   AS     
+begin    
+dbms_output.put_line('record inserted successfully');
+select NAME into name_ from customers where CUSTOMER_ID = id;
+end;
+----------------------------------
 DECLARE 
 manager_id number;  -- passing variable 
 sqlquer    VARCHAR2(200); -- query sentence
