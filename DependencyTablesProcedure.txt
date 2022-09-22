@@ -21,3 +21,17 @@ BEGIN
   END LOOP;
   CLOSE order_cur;
 END;
+-----------------------------------
+
+
+DECLARE
+   temp_tab  table_type; 
+   fetched_count integer:=0;
+   sqlquer VARCHAR2(200);
+BEGIN
+    sqlquer:= 'select distinct(order_id) as order_id  from system.order_details';
+    EXECUTE IMMEDIATE sqlquer BULK COLLECT INTO temp_tab;
+    dbms_output.put_line('test'||temp_tab.COUNT);
+    select count(*) into fetched_count from system.customer_order ctab where ctab.order_id in (select * from table(temp_tab)); -- fetching data 
+    dbms_output.put_line('test ' || fetched_count||temp_tab.count);
+END;
