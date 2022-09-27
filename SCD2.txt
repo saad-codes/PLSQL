@@ -1,0 +1,160 @@
+drop table price_scd_2_test;
+create table price_scd_2_test (
+                                item_id integer
+                                ,item_name varchar2(200)
+                                ,item_price number(10,2)
+                                ,insertion_time TIMESTAMP
+                                ,status varchar2(200));
+insert into  price_scd_2_test (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (1,'salan' , 15, CURRENT_TIMESTAMP,  'A')
+                                  
+insert into  price_scd_2_test (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (7,'wew' , 15, CURRENT_TIMESTAMP,  'A');
+insert into  price_scd_2_test (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (2,'rote' , 15, CURRENT_TIMESTAMP,  'A')
+
+
+insert into  price_scd_2_test (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (3,'khna' , 15, CURRENT_TIMESTAMP,  'A')
+
+insert into  price_scd_2_test (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (4,'nashta' , 15, CURRENT_TIMESTAMP,  'A')
+
+insert into  price_scd_2_test (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (5,'nans' , 15, CURRENT_TIMESTAMP,  'A')
+
+
+create table price_scd_2_test_staging  as select * from price_scd_2_test;
+drop table price_scd_2_test_staging;
+
+ALTER TABLE price_scd_2_test_staging 
+ADD END_TIME TIMESTAMP;
+
+ALTER TABLE price_scd_2_test_staging
+  ADD (
+    CONSTRAINT price_sk_scd2 PRIMARY KEY (price_sk_scd2)
+  );
+
+--------------------------------------------------------------------------------
+--                               Con..
+
+  CREATE TABLE "SYSTEM"."PRICE_SCD_2_TEST_STAGING" 
+   (	"ITEM_ID" NUMBER(*,0), 
+	"ITEM_NAME" VARCHAR2(200 BYTE), 
+	"ITEM_PRICE" NUMBER(10,2), 
+	"INSERTION_TIME" TIMESTAMP (6), 
+	"STATUS" VARCHAR2(200 BYTE), 
+	"PRICE_SK_SCD2" NUMBER
+   ) PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+
+  CREATE OR REPLACE NONEDITIONABLE TRIGGER "SYSTEM"."PRICE_SK_TRIGGER" 
+BEFORE INSERT ON price_scd_2_test_staging
+FOR EACH ROW
+BEGIN
+  SELECT price_sk.nextval
+  INTO :new.price_sk_scd2
+  FROM dual;
+END;
+/
+ALTER TRIGGER "SYSTEM"."PRICE_SK_TRIGGER" ENABLE;
+
+--------------------------------------------------------------------------------
+drop SEQUENCE price_sk;
+CREATE SEQUENCE price_sk;
+--
+DROP TRIGGER price_sk_trigger;
+CREATE TRIGGER price_sk_trigger
+BEFORE INSERT ON price_scd_2_test_staging
+FOR EACH ROW
+BEGIN
+  SELECT price_sk.nextval
+  INTO :new.price_sk_scd2
+  FROM dual;
+END;
+
+commit;
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--drop table price_scd_2_test_staging;
+drop table  price_scd_2_test_landing;
+create  table price_scd_2_test_landing  as select * from price_scd_2_test;
+TRUNCATE TABLE price_scd_2_test_staging; 
+insert into price_scd_2_test_staging (item_id ,item_name,item_price,insertion_time,status)  select * from price_scd_2_test_landing;
+commit ;
+
+select * from price_scd_2_test_staging;
+select * from price_scd_2_test_landing;
+
+-- Insert query
+insert into  price_scd_2_test_landing (item_id ,item_name,item_price,insertion_time,status) values 
+                                  (8,'salas' , 14, CURRENT_TIMESTAMP,  'A');
+commit;                          
+
+-- deletion-query                                                             
+UPDATE  price_scd_2_test_landing set STATUS = 'D' where ITEM_ID = 4;
+commit;
+-- Updation - query
+UPDATE  price_scd_2_test_landing set ITEM_PRICE = 78 where ITEM_ID = 2;
+commit;
+UPDATE  price_scd_2_test_landing set INSERTION_TIME = CURRENT_TIMESTAMP where ITEM_ID = 2;
+commit;
+---------------------------------------------------------------------------------------------------------------------------------------------
+##############################################################################################################################################
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+
+create or replace PROCEDURE SCD2 AS 
+BEGIN
+--------------------------------- insert when new rows are comming --------------------------------------
+insert into price_scd_2_test_staging (item_id ,item_name,item_price,insertion_time,status)
+select * from price_scd_2_test_landing where item_id not in (select item_id from price_scd_2_test_staging);
+commit;
+------------------------------------------------------------------------------------------------------------
+
+-- UPDATION OF TIME QUERIES RETIRING THE PREVIOUS PRICE 
+
+
+UPDATE price_scd_2_test_staging set END_TIME = ( 
+select INSERTION_TIME from 
+(select * from price_scd_2_test_landing where item_id in (select item_id from price_scd_2_test_staging where end_time is null)) T1 INNER JOIN
+(select status as stage_status , item_price as stage_price, ITEM_ID as idd from price_scd_2_test_staging where end_time is null) T2 ON T1.ITEM_ID = T2.idd 
+where STATUS=STAGE_STATUS and STAGE_PRICE !=ITEM_PRICE)
+where price_scd_2_test_staging.ITEM_ID in (select ITEM_ID from 
+(select * from price_scd_2_test_landing where item_id in (select item_id from price_scd_2_test_staging where end_time is null)) T1 INNER JOIN
+(select status as stage_status , item_price as stage_price, ITEM_ID as idd from price_scd_2_test_staging where end_time is null) T2 ON T1.ITEM_ID = T2.idd 
+where STATUS=STAGE_STATUS and STAGE_PRICE !=ITEM_PRICE) and price_scd_2_test_staging.END_TIME is null;
+commit;
+
+-- UPDATING THE STATUS
+
+UPDATE price_scd_2_test_staging set STATUS = ( 
+select STATUS from 
+(select * from price_scd_2_test_landing where item_id in (select item_id from price_scd_2_test_staging where end_time is null)) T1 INNER JOIN
+(select status as stage_status , item_price as stage_price, ITEM_ID as idd from price_scd_2_test_staging where end_time is null) T2 ON T1.ITEM_ID = T2.idd 
+where STATUS!=STAGE_STATUS and STAGE_PRICE =ITEM_PRICE)
+where price_scd_2_test_staging.ITEM_ID in (select ITEM_ID from 
+(select * from price_scd_2_test_landing where item_id in (select item_id from price_scd_2_test_staging where end_time is null)) T1 INNER JOIN
+(select status as stage_status , item_price as stage_price, ITEM_ID as idd from price_scd_2_test_staging where end_time is null) T2 ON T1.ITEM_ID = T2.idd 
+where STATUS!=STAGE_STATUS and STAGE_PRICE =ITEM_PRICE) and price_scd_2_test_staging.END_TIME is null;
+commit;
+
+-- UPDATE STATUS AFTER THE STATUS IS SETTED TO NULL 
+UPDATE price_scd_2_test_staging set END_TIME = CURRENT_TIMESTAMP
+where price_scd_2_test_staging.status = 'D' and price_scd_2_test_staging.END_TIME is null;
+commit;
+
+INSERT INTO price_scd_2_test_staging   (item_id ,item_name,item_price,insertion_time,status)  select  item_id ,item_name,item_price,insertion_time,status from price_scd_2_test_landing where ITEM_ID in (select ITEM_ID from price_scd_2_test_staging where END_TIME is not null and STATUS != 'D') ;
+
+commit;
+END SCD2;
+-------------------------------------------------------------------------------------------------
+
+
+execute SCD2;
+select * from price_scd_2_test_staging;
